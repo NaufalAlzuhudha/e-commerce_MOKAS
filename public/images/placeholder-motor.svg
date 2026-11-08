@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FAFC" />
+      <stop offset="100%" stop-color="#E2E8F0" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)" />
+  <circle cx="400" cy="270" r="110" fill="#CBD5E1" opacity="0.4" />
+  <!-- Motor Icon Silhouette -->
+  <g transform="translate(260, 160) scale(1.4)" fill="none" stroke="#64748B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="40" cy="110" r="30" stroke="#0F172A" stroke-width="8" />
+    <circle cx="160" cy="110" r="30" stroke="#0F172A" stroke-width="8" />
+    <path d="M40 110 L85 60 L130 60 L160 110" stroke="#C62828" stroke-width="8" />
+    <path d="M85 60 L105 110 L155 110" />
+    <path d="M115 35 L135 60" stroke="#0F172A" stroke-width="9" />
+    <path d="M100 35 L130 35" stroke="#0F172A" stroke-width="8" />
+    <path d="M60 65 L95 65" stroke="#166534" stroke-width="10" />
+  </g>
+  <text x="400" y="440" font-family="'Inter', sans-serif" font-size="24" font-weight="700" fill="#0F172A" text-anchor="middle">MUHARIMOKAS</text>
+  <text x="400" y="475" font-family="'Inter', sans-serif" font-size="16" font-weight="500" fill="#64748B" text-anchor="middle">Foto Unit Showroom</text>
+</svg>

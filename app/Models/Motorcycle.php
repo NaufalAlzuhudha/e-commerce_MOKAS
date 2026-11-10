@@ -35,6 +35,7 @@ class Motorcycle extends Model
         'description',
         'status',
         'published_at',
+        'sold_at',
     ];
 
     protected $casts = [
@@ -43,6 +44,7 @@ class Motorcycle extends Model
         'mileage' => 'integer',
         'engine_capacity' => 'integer',
         'published_at' => 'datetime',
+        'sold_at' => 'datetime',
     ];
 
     /**
@@ -116,24 +118,36 @@ class Motorcycle extends Model
             $query->where('status', $filters['status']);
         }
 
-        // Filter Min Price
-        if (!empty($filters['min_price'])) {
-            $query->where('price', '>=', (float) $filters['min_price']);
+        // Filter Min & Max Price (gracefully handles edge case where min_price > max_price)
+        $minPrice = !empty($filters['min_price']) ? (float) $filters['min_price'] : null;
+        $maxPrice = !empty($filters['max_price']) ? (float) $filters['max_price'] : null;
+
+        if ($minPrice !== null && $maxPrice !== null && $minPrice > $maxPrice) {
+            [$minPrice, $maxPrice] = [$maxPrice, $minPrice];
         }
 
-        // Filter Max Price
-        if (!empty($filters['max_price'])) {
-            $query->where('price', '<=', (float) $filters['max_price']);
+        if ($minPrice !== null) {
+            $query->where('price', '>=', $minPrice);
         }
 
-        // Filter Min Year
-        if (!empty($filters['min_year'])) {
-            $query->where('year', '>=', (int) $filters['min_year']);
+        if ($maxPrice !== null) {
+            $query->where('price', '<=', $maxPrice);
         }
 
-        // Filter Max Year
-        if (!empty($filters['max_year'])) {
-            $query->where('year', '<=', (int) $filters['max_year']);
+        // Filter Min & Max Year (gracefully handles edge case where min_year > max_year)
+        $minYear = !empty($filters['min_year']) ? (int) $filters['min_year'] : null;
+        $maxYear = !empty($filters['max_year']) ? (int) $filters['max_year'] : null;
+
+        if ($minYear !== null && $maxYear !== null && $minYear > $maxYear) {
+            [$minYear, $maxYear] = [$maxYear, $minYear];
+        }
+
+        if ($minYear !== null) {
+            $query->where('year', '>=', $minYear);
+        }
+
+        if ($maxYear !== null) {
+            $query->where('year', '<=', $maxYear);
         }
 
         // Filter Transmission

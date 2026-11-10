@@ -33,3 +33,4 @@ class HomeController extends Controller
         return view('public.home', compact('featuredMotorcycles', 'brands', 'stats'));
     }
 }
+

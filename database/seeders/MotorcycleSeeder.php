@@ -171,6 +171,7 @@ class MotorcycleSeeder extends Seeder
 
             $itemData['created_by'] = $admin->id;
             $itemData['published_at'] = ($itemData['status'] === Motorcycle::STATUS_PUBLISHED || $itemData['status'] === Motorcycle::STATUS_SOLD) ? now()->subDays(10 - $index) : null;
+            $itemData['sold_at'] = $itemData['status'] === Motorcycle::STATUS_SOLD ? now()->subDays(10 - $index) : null;
 
             $motorcycle = Motorcycle::create($itemData);
 

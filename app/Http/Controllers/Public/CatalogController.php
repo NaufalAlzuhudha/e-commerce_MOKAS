@@ -55,9 +55,10 @@ class CatalogController extends Controller
     /**
      * Display a specific motorcycle's detail page.
      */
-    public function show(int $id): View
+    public function show(string|int $id): View
     {
-        $motorcycle = Motorcycle::with(['brand', 'images', 'creator'])->findOrFail($id);
+        $realId = (int) explode('-', (string) $id)[0];
+        $motorcycle = Motorcycle::with(['brand', 'images', 'creator'])->findOrFail($realId);
 
         // Security requirement: Customers cannot access draft or inactive products
         if ($motorcycle->status === Motorcycle::STATUS_DRAFT || $motorcycle->status === Motorcycle::STATUS_INACTIVE) {
@@ -79,3 +80,4 @@ class CatalogController extends Controller
         return view('public.catalog.show', compact('motorcycle', 'relatedMotorcycles'));
     }
 }
+

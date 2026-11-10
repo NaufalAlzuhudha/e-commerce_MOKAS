@@ -3,19 +3,40 @@
 @section('page_title', 'Kelola Inventaris Motor')
 
 @section('content')
-<div class="space-y-6" x-data="{ deleteModalOpen: false, deleteActionUrl: '', deleteItemTitle: '' }">
+<div
+    class="space-y-6"
+    x-data="{
+        deleteModalOpen: false,
+        deleteActionUrl: '',
+        deleteItemTitle: '',
+        exportModalOpen: {{ $errors->hasAny(['from_date', 'to_date']) ? 'true' : 'false' }},
+        exportMode: '{{ $errors->hasAny(['from_date', 'to_date']) ? (old('export_type') === 'sales' ? 'sales' : 'arrivals') : '' }}',
+        exportAction: '{{ $errors->hasAny(['from_date', 'to_date']) ? (old('export_type') === 'sales' ? route('admin.motorcycles.export.sales') : route('admin.motorcycles.export.arrivals')) : '' }}'
+    }"
+>
 
     <!-- Header Actions -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <h2 class="text-xl font-bold text-slate-900 tracking-tight">Daftar Inventaris Kendaraan</h2>
             <p class="text-xs text-slate-500 mt-0.5">Kelola data spesifikasi, harga, status penjualan, dan foto seluruh unit.</p>
+            <p class="text-xs text-amber-700 mt-1">Ekspor penjualan difilter berdasarkan tanggal status motor berubah menjadi terjual.</p>
         </div>
 
-        <a href="{{ route('admin.motorcycles.create') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-brand-red-700 hover:bg-brand-red-800 transition-colors shadow-sm self-start sm:self-auto">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Tambah Unit Baru
-        </a>
+        <div class="flex flex-wrap gap-2 self-start sm:self-auto">
+            <button type="button" @click="exportMode = 'sales'; exportAction = '{{ route('admin.motorcycles.export.sales') }}'; exportModalOpen = true" class="inline-flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition-colors" title="Pilih rentang tanggal untuk ekspor motor terjual.">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16V4m0 12l-4-4m4 4l4-4M4 20h16"/></svg>
+                Ekspor Penjualan
+            </button>
+            <button type="button" @click="exportMode = 'arrivals'; exportAction = '{{ route('admin.motorcycles.export.arrivals') }}'; exportModalOpen = true" class="inline-flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition-colors" title="Pilih rentang tanggal untuk ekspor motor masuk.">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16V4m0 12l-4-4m4 4l4-4M4 20h16"/></svg>
+                Ekspor Motor Masuk
+            </button>
+            <a href="{{ route('admin.motorcycles.create') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-brand-red-700 hover:bg-brand-red-800 transition-colors shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Tambah Unit Baru
+            </a>
+        </div>
     </div>
 
     <!-- FILTER & SEARCH BAR (Section 5.3) -->
@@ -227,6 +248,50 @@
                 {{ $motorcycles->links() }}
             </div>
         @endif
+    </div>
+
+    <div
+        x-show="exportModalOpen"
+        x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="export-modal-title"
+        @keydown.escape.window="exportModalOpen = false"
+    >
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-modal border border-slate-200 space-y-5" @click.outside="exportModalOpen = false">
+            <div>
+                <h3 id="export-modal-title" class="text-lg font-bold text-slate-900" x-text="exportMode === 'sales' ? 'Ekspor Data Penjualan' : 'Ekspor Data Motor Masuk'"></h3>
+                <p class="text-xs text-slate-500 mt-1" x-text="exportMode === 'sales' ? 'Pilih rentang tanggal motor berubah menjadi terjual.' : 'Pilih rentang tanggal motor ditambahkan ke inventaris.'"></p>
+            </div>
+
+            <form :action="exportAction" method="GET" class="space-y-4">
+                <input type="hidden" name="export_type" x-model="exportMode">
+                <div>
+                    <label for="export-from-date" class="block text-xs font-semibold text-slate-700 mb-1.5">Dari tanggal</label>
+                    <input id="export-from-date" type="date" name="from_date" value="{{ old('from_date') }}" required class="w-full rounded-xl border border-slate-300 text-sm py-2.5 px-3 focus:border-brand-green-700 focus:ring-1 focus:ring-brand-green-700 outline-none">
+                    @error('from_date')
+                        <p class="text-xs text-rose-600 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label for="export-to-date" class="block text-xs font-semibold text-slate-700 mb-1.5">Sampai tanggal</label>
+                    <input id="export-to-date" type="date" name="to_date" value="{{ old('to_date') }}" required class="w-full rounded-xl border border-slate-300 text-sm py-2.5 px-3 focus:border-brand-green-700 focus:ring-1 focus:ring-brand-green-700 outline-none">
+                    @error('to_date')
+                        <p class="text-xs text-rose-600 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+                <p class="text-[11px] text-slate-500">Tanggal awal dan akhir dihitung inklusif. Motor yang sudah terjual sebelum fitur ini tersedia mungkin belum memiliki tanggal penjualan.</p>
+                <div class="flex gap-3 pt-1">
+                    <button type="button" @click="exportModalOpen = false" class="flex-1 py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 font-semibold text-xs hover:bg-slate-50 transition-colors">
+                        Batal
+                    </button>
+                    <button type="submit" class="flex-1 py-2.5 px-4 rounded-xl bg-brand-green-700 hover:bg-brand-green-800 text-white font-bold text-xs transition-colors shadow-sm">
+                        Unduh Excel
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- DELETE CONFIRMATION MODAL (Section 5.6) -->

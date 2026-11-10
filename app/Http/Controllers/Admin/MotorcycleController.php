@@ -127,3 +127,4 @@ class MotorcycleController extends Controller
             ->with('success', "Unit motor '{$title}' dan seluruh foto terkait berhasil dihapus.");
     }
 }
+

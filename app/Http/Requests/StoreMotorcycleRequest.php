@@ -80,3 +80,4 @@ class StoreMotorcycleRequest extends FormRequest
         ];
     }
 }
+

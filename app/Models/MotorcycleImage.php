@@ -37,7 +37,7 @@ class MotorcycleImage extends Model
     public function getUrlAttribute(): string
     {
         if (empty($this->image_path)) {
-            return asset('images/placeholder-motor.jpg');
+            return asset('images/placeholder-motor.svg');
         }
 
         if (str_starts_with($this->image_path, 'http://') || str_starts_with($this->image_path, 'https://')) {
@@ -47,3 +47,4 @@ class MotorcycleImage extends Model
         return Storage::disk('public')->url($this->image_path);
     }
 }
+

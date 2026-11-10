@@ -102,7 +102,7 @@
                         name="price"
                         id="price"
                         value="{{ old('price', (int) $motorcycle->price) }}"
-                        step="100000"
+                        step="1"
                         min="1"
                         required
                         class="w-full rounded-xl border {{ $errors->has('price') ? 'border-rose-500' : 'border-slate-300' }} text-sm py-2.5 px-3 focus:border-brand-green-700 focus:ring-1 focus:ring-brand-green-700 outline-none"

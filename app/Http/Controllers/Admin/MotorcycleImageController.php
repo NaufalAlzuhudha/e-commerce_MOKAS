@@ -49,3 +49,4 @@ class MotorcycleImageController extends Controller
         return back()->with('success', 'Foto utama unit berhasil diperbarui.');
     }
 }
+

@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
 
 class MuhariMokasTest extends TestCase
@@ -129,6 +130,15 @@ class MuhariMokasTest extends TestCase
         $priceResponse->assertStatus(200);
         $priceResponse->assertSee('NMAX 155');
         $priceResponse->assertDontSee('Beat Deluxe');
+
+        // Edge case: min_price > max_price should be handled gracefully
+        $swappedPriceResponse = $this->get(route('catalog.index', [
+            'min_price' => 35000000,
+            'max_price' => 20000000,
+        ]));
+        $swappedPriceResponse->assertStatus(200);
+        $swappedPriceResponse->assertSee('NMAX 155');
+        $swappedPriceResponse->assertDontSee('Beat Deluxe');
     }
 
     public function test_product_detail_page_renders_with_whatsapp_integration(): void
@@ -154,6 +164,11 @@ class MuhariMokasTest extends TestCase
         $response->assertSee('Rp 28.500.000');
         $response->assertSee('Hubungi Showroom via WhatsApp');
         $response->assertSee(rawurlencode('Honda PCX 160 CBS 2023'));
+
+        // Test SEO slug URL: /katalog/1-honda-pcx-160
+        $slugResponse = $this->get('/katalog/' . $motorcycle->id . '-honda-pcx-160');
+        $slugResponse->assertStatus(200);
+        $slugResponse->assertSee('PCX 160 CBS');
     }
 
     public function test_sold_motorcycle_displays_terjual_badge_and_disabled_cta(): void
@@ -317,5 +332,198 @@ class MuhariMokasTest extends TestCase
 
         $response->assertRedirect(route('admin.motorcycles.index'));
         $this->assertDatabaseMissing('motorcycles', ['id' => $motorcycle->id]);
+    }
+
+    public function test_employee_can_export_sold_motorcycles_as_excel(): void
+    {
+        $sold = Motorcycle::create([
+            'brand_id' => $this->honda->id,
+            'created_by' => $this->employee->id,
+            'model' => 'Sold CBR',
+            'year' => 2022,
+            'price' => 20000000,
+            'mileage' => 10000,
+            'engine_capacity' => 150,
+            'transmission' => 'Manual',
+            'color' => 'Merah',
+            'description' => 'Unit terjual.',
+            'status' => Motorcycle::STATUS_SOLD,
+            'sold_at' => now(),
+        ]);
+        Motorcycle::create([
+            'brand_id' => $this->honda->id,
+            'created_by' => $this->employee->id,
+            'model' => 'Available Vario',
+            'year' => 2023,
+            'price' => 22000000,
+            'mileage' => 5000,
+            'engine_capacity' => 160,
+            'transmission' => 'Automatic',
+            'color' => 'Hitam',
+            'description' => 'Unit tersedia.',
+            'status' => Motorcycle::STATUS_PUBLISHED,
+        ]);
+
+        Motorcycle::create([
+            'brand_id' => $this->yamaha->id,
+            'created_by' => $this->employee->id,
+            'model' => 'Sold Outside Date Range',
+            'year' => 2020,
+            'price' => 12000000,
+            'mileage' => 30000,
+            'engine_capacity' => 125,
+            'transmission' => 'Manual',
+            'color' => 'Putih',
+            'description' => 'Penjualan di luar rentang.',
+            'status' => Motorcycle::STATUS_SOLD,
+            'sold_at' => now()->subDays(3),
+        ]);
+
+        $response = $this->actingAs($this->employee)->get(route('admin.motorcycles.export.sales', [
+            'export_type' => 'sales',
+            'from_date' => now()->toDateString(),
+            'to_date' => now()->toDateString(),
+        ]));
+
+        $response->assertOk();
+        $response->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+        $path = tempnam(sys_get_temp_dir(), 'mokas-export-');
+        try {
+            file_put_contents($path, $response->streamedContent());
+            $sheet = IOFactory::load($path)->getActiveSheet();
+            $this->assertSame('Motor Terjual', $sheet->getTitle());
+            $this->assertSame('Model', $sheet->getCell('C1')->getValue());
+            $this->assertSame('Sold CBR', $sheet->getCell('C2')->getValue());
+            $this->assertSame(Motorcycle::STATUS_SOLD, $sheet->getCell('J2')->getValue());
+            $this->assertSame(now()->format('Y-m-d'), substr($sheet->getCell('L2')->getValue(), 0, 10));
+            $this->assertNull($sheet->getCell('C3')->getValue());
+        } finally {
+            unlink($path);
+        }
+    }
+
+    public function test_employee_can_export_motorcycle_arrivals_in_newest_first_order(): void
+    {
+        Motorcycle::create([
+            'brand_id' => $this->honda->id,
+            'created_by' => $this->employee->id,
+            'model' => 'Arrival Outside Date Range',
+            'year' => 2020,
+            'price' => 12000000,
+            'mileage' => 30000,
+            'engine_capacity' => 125,
+            'transmission' => 'Manual',
+            'color' => 'Hitam',
+            'description' => 'Data di luar rentang.',
+            'status' => Motorcycle::STATUS_DRAFT,
+            'created_at' => now()->subDays(3),
+            'updated_at' => now()->subDays(3),
+        ]);
+        $oldest = Motorcycle::create([
+            'brand_id' => $this->honda->id,
+            'created_by' => $this->employee->id,
+            'model' => 'Old Arrival',
+            'year' => 2021,
+            'price' => 14000000,
+            'mileage' => 20000,
+            'engine_capacity' => 125,
+            'transmission' => 'Automatic',
+            'color' => 'Biru',
+            'description' => 'Data motor lama.',
+            'status' => Motorcycle::STATUS_DRAFT,
+            'created_at' => now()->subDay(),
+            'updated_at' => now()->subDay(),
+        ]);
+        $newest = Motorcycle::create([
+            'brand_id' => $this->yamaha->id,
+            'created_by' => $this->employee->id,
+            'model' => 'New Arrival',
+            'year' => 2024,
+            'price' => 25000000,
+            'mileage' => 1000,
+            'engine_capacity' => 155,
+            'transmission' => 'Automatic',
+            'color' => 'Abu-abu',
+            'description' => 'Data motor baru.',
+            'status' => Motorcycle::STATUS_PUBLISHED,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->employee)->get(route('admin.motorcycles.export.arrivals', [
+            'export_type' => 'arrivals',
+            'from_date' => now()->subDay()->toDateString(),
+            'to_date' => now()->toDateString(),
+        ]));
+
+        $response->assertOk();
+        $path = tempnam(sys_get_temp_dir(), 'mokas-export-');
+        try {
+            file_put_contents($path, $response->streamedContent());
+            $sheet = IOFactory::load($path)->getActiveSheet();
+            $this->assertSame('Motor Baru Masuk', $sheet->getTitle());
+            $this->assertSame('New Arrival', $sheet->getCell('C2')->getValue());
+            $this->assertSame('Old Arrival', $sheet->getCell('C3')->getValue());
+            $this->assertSame((int) $newest->id, $sheet->getCell('A2')->getValue());
+            $this->assertSame((int) $oldest->id, $sheet->getCell('A3')->getValue());
+        } finally {
+            unlink($path);
+        }
+    }
+
+    public function test_export_requires_a_valid_inclusive_date_range(): void
+    {
+        $response = $this->actingAs($this->employee)->get(route('admin.motorcycles.export.arrivals', [
+            'export_type' => 'arrivals',
+            'from_date' => now()->toDateString(),
+            'to_date' => now()->subDay()->toDateString(),
+        ]));
+
+        $response->assertRedirect();
+        $response->assertSessionHasErrors(['to_date']);
+    }
+
+    public function test_employee_can_open_export_date_range_form(): void
+    {
+        $response = $this->actingAs($this->employee)->get(route('admin.motorcycles.index'));
+
+        $response->assertOk();
+        $response->assertSee('Ekspor Penjualan');
+        $response->assertSee('Ekspor Motor Masuk');
+        $response->assertSee('type="date"', false);
+        $response->assertSee('x-show="exportModalOpen"', false);
+    }
+
+    public function test_marking_motorcycle_as_sold_records_sale_date(): void
+    {
+        $motorcycle = Motorcycle::create([
+            'brand_id' => $this->honda->id,
+            'created_by' => $this->employee->id,
+            'model' => 'Sale Date Test',
+            'year' => 2022,
+            'price' => 17000000,
+            'mileage' => 15000,
+            'engine_capacity' => 150,
+            'transmission' => 'Manual',
+            'color' => 'Hitam',
+            'description' => 'Tes tanggal penjualan.',
+            'status' => Motorcycle::STATUS_PUBLISHED,
+        ]);
+
+        $this->actingAs($this->employee)->put(route('admin.motorcycles.update', $motorcycle), [
+            'brand_id' => $this->honda->id,
+            'model' => $motorcycle->model,
+            'year' => $motorcycle->year,
+            'price' => $motorcycle->price,
+            'mileage' => $motorcycle->mileage,
+            'engine_capacity' => $motorcycle->engine_capacity,
+            'transmission' => $motorcycle->transmission,
+            'color' => $motorcycle->color,
+            'description' => $motorcycle->description,
+            'status' => Motorcycle::STATUS_SOLD,
+        ])->assertRedirect(route('admin.motorcycles.index'));
+
+        $this->assertNotNull($motorcycle->fresh()->sold_at);
     }
 }

@@ -22,3 +22,4 @@ class Brand extends Model
         return $this->hasMany(Motorcycle::class);
     }
 }
+

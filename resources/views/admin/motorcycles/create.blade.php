@@ -100,7 +100,7 @@
                         name="price"
                         id="price"
                         value="{{ old('price') }}"
-                        step="100000"
+                        step="1"
                         min="1"
                         required
                         placeholder="Contoh: 18500000"

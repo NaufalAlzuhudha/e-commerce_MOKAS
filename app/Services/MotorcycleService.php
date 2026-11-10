@@ -23,6 +23,9 @@ class MotorcycleService
             if ($data['status'] === Motorcycle::STATUS_PUBLISHED && empty($data['published_at'])) {
                 $data['published_at'] = now();
             }
+            if ($data['status'] === Motorcycle::STATUS_SOLD && empty($data['sold_at'])) {
+                $data['sold_at'] = now();
+            }
 
             $motorcycle = Motorcycle::create($data);
 
@@ -43,6 +46,12 @@ class MotorcycleService
             // Set published_at timestamp when transitioning to published
             if ($data['status'] === Motorcycle::STATUS_PUBLISHED && !$motorcycle->published_at) {
                 $data['published_at'] = now();
+            }
+
+            if ($data['status'] === Motorcycle::STATUS_SOLD && $motorcycle->status !== Motorcycle::STATUS_SOLD) {
+                $data['sold_at'] = now();
+            } elseif ($data['status'] !== Motorcycle::STATUS_SOLD) {
+                $data['sold_at'] = null;
             }
 
             $motorcycle->update($data);

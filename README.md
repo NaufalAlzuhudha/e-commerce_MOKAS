@@ -37,6 +37,7 @@
   - Form input 2-kolom terorganisir dengan validasi server-side lengkap.
   - **Multiple Image Upload:** Unggah hingga 10 foto per unit motor (@ maks. 2 MB) dengan live preview, penentuan foto utama (thumbnail), dan opsi hapus foto spesifik.
   - **Siklus Status Produk:** Transisi `draft` $\rightarrow$ `published` $\rightarrow$ `sold` $\rightarrow$ `inactive`.
+  - **Ekspor Excel (.xlsx):** Pilih rentang tanggal untuk mengunduh daftar motor terjual atau motor masuk. Tanggal penjualan dicatat saat status unit diubah menjadi terjual.
   - **Modal Konfirmasi Hapus:** Menghapus unit dan secara otomatis membersihkan file fisik foto dari storage server (*zero orphan files*).
 
 ---

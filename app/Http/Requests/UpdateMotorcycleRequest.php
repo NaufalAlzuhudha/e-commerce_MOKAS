@@ -78,3 +78,4 @@ class UpdateMotorcycleRequest extends FormRequest
         ];
     }
 }
+

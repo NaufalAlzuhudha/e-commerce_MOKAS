@@ -45,3 +45,4 @@
     <span class="w-1.5 h-1.5 rounded-full {{ $config['dot'] }}" aria-hidden="true"></span>
     <span>{{ $config['label'] }}</span>
 </span>
+
